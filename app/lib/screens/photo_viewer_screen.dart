@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -6,9 +5,6 @@ import 'package:video_player/video_player.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:chewie/chewie.dart';
 import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:http/http.dart' as http;
 import '../utils/helpers.dart';
 import '../providers/photos_provider.dart';
 
@@ -41,9 +37,6 @@ class _PhotoViewerScreenState extends ConsumerState<PhotoViewerScreen> {
   int _pointerCount = 0;
   Offset? _dragStartPoint;
   bool _isDragging = false; 
-
-  // Track sharing state
-  bool _isSharing = false;
 
   @override
   void initState() {
@@ -122,87 +115,6 @@ class _PhotoViewerScreenState extends ConsumerState<PhotoViewerScreen> {
     setState(() => _showUI = !_showUI);
   }
 
-  // --- SHARE LOGIC START ---
-  Future<void> _shareCurrentPhoto() async {
-    if (_isSharing) return;
-
-    setState(() => _isSharing = true);
-    
-    try {
-      final photo = _localPhotos[_currentIndex];
-      final filename = photo.getStringValue('file');
-      final isVideo = MediaHelper.isVideo(filename);
-      
-      // Default to Original URL
-      String url = MediaHelper.getMediaUrl(photo);
-      String dlFilename = filename;
-
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Preparing share..."), 
-          duration: Duration(seconds: 1),
-        ),
-      );
-
-      // 1. SMART PROXY CHECK FOR VIDEOS
-      if (isVideo) {
-        final proxyUrl = MediaHelper.getVideoProxyUrl(photo);
-        try {
-          // Check if proxy exists (HEAD request is fast)
-          final head = await http.head(Uri.parse(proxyUrl));
-          if (head.statusCode == 200) {
-            url = proxyUrl;
-            dlFilename = '${filename}_proxy.mp4';
-            print("Sharing Proxy Video: $url");
-          } else {
-            print("Proxy not found (${head.statusCode}), using Original.");
-          }
-        } catch (e) {
-          print("Proxy check failed, using Original: $e");
-        }
-      }
-
-      // 2. Download file (Streamed)
-      final tempDir = await getTemporaryDirectory();
-      final savePath = '${tempDir.path}/$dlFilename';
-      final file = File(savePath);
-
-      // Only download if we don't have it cached in temp
-      if (!await file.exists()) {
-        final request = http.Request('GET', Uri.parse(url));
-        final response = await http.Client().send(request);
-        
-        if (response.statusCode != 200) {
-          throw Exception("Server returned ${response.statusCode}");
-        }
-
-        final sink = file.openWrite();
-        await response.stream.pipe(sink);
-        await sink.close();
-      }
-
-      // 3. Trigger Native Share
-      if (mounted) {
-        final box = context.findRenderObject() as RenderBox?;
-        await Share.shareXFiles(
-          [XFile(savePath)],
-          //text: 'Shared from Family Vault',
-          sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Share failed: $e"), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSharing = false);
-    }
-  }
-  // --- SHARE LOGIC END ---
-
   Future<void> _deleteCurrentPhoto() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -254,57 +166,59 @@ class _PhotoViewerScreenState extends ConsumerState<PhotoViewerScreen> {
   Widget build(BuildContext context) {
     if (_localPhotos.isEmpty) return const SizedBox.shrink();
     
+    final currentPhoto = _localPhotos[_currentIndex];
+
     return Scaffold(
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
-      body: Listener(
-        onPointerDown: (event) {
-          _pointerCount++;
-          if (_pointerCount == 1) {
-            _dragStartPoint = event.position;
-            _isDragging = false;
-          } else {
-            _dragStartPoint = null;
-            _isDragging = false;
-            if (_dragDistance != 0) setState(() => _dragDistance = 0);
-          }
-        },
-        onPointerUp: (event) {
-          _pointerCount--;
-          if (_pointerCount == 0) {
-            if (_isDragging && _dragDistance.abs() > 100) {
-              Navigator.pop(context);
-            } else {
-              if (_dragDistance != 0) setState(() => _dragDistance = 0);
-            }
-            _dragStartPoint = null;
-            _isDragging = false;
-          }
-        },
-        onPointerCancel: (event) {
-          _pointerCount = 0;
-          _dragStartPoint = null;
-          _isDragging = false;
-          if (_dragDistance != 0) setState(() => _dragDistance = 0);
-        },
-        onPointerMove: (event) {
-          if (_pointerCount == 1 && !_isZoomed && _dragStartPoint != null) {
-            final delta = event.position.dy - _dragStartPoint!.dy;
-            if (!_isDragging && delta.abs() > 20) {
-              _isDragging = true;
-            }
-            if (_isDragging) {
-              setState(() {
-                _dragDistance = delta;
-              });
-            }
-          }
-        },
-        child: GestureDetector(
-          onTap: _toggleUI,
-          child: Stack(
-            children: [
-              Transform.scale(
+      body: GestureDetector(
+        onTap: _toggleUI,
+        child: Stack(
+          children: [
+            Listener(
+              onPointerDown: (event) {
+                _pointerCount++;
+                if (_pointerCount == 1) {
+                  _dragStartPoint = event.position;
+                  _isDragging = false;
+                } else {
+                  _dragStartPoint = null;
+                  _isDragging = false;
+                  if (_dragDistance != 0) setState(() => _dragDistance = 0);
+                }
+              },
+              onPointerUp: (event) {
+                _pointerCount--;
+                if (_pointerCount == 0) {
+                  if (_isDragging && _dragDistance.abs() > 100) {
+                    Navigator.pop(context);
+                  } else {
+                    if (_dragDistance != 0) setState(() => _dragDistance = 0);
+                  }
+                  _dragStartPoint = null;
+                  _isDragging = false;
+                }
+              },
+              onPointerCancel: (event) {
+                _pointerCount = 0;
+                _dragStartPoint = null;
+                _isDragging = false;
+                if (_dragDistance != 0) setState(() => _dragDistance = 0);
+              },
+              onPointerMove: (event) {
+                if (_pointerCount == 1 && !_isZoomed && _dragStartPoint != null) {
+                  final delta = event.position.dy - _dragStartPoint!.dy;
+                  if (!_isDragging && delta.abs() > 20) {
+                    _isDragging = true;
+                  }
+                  if (_isDragging) {
+                    setState(() {
+                      _dragDistance = delta;
+                    });
+                  }
+                }
+              },
+              child: Transform.scale(
                 scale: 1 - (_dragDistance.abs() / 1000).clamp(0.0, 0.3),
                 child: Transform.translate(
                   offset: Offset(0, _dragDistance),
@@ -340,120 +254,80 @@ class _PhotoViewerScreenState extends ConsumerState<PhotoViewerScreen> {
                   ),
                 ),
               ),
+            ),
 
-              // --- TOP BAR ---
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeInOut,
-                top: _showUI ? 0 : -100,
-                left: 0,
-                right: 0,
-                child: Container(
-                  padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).padding.top + 4,
-                    bottom: 24, 
-                    left: 8, 
-                    right: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.8),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white, size: 26),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.more_vert, color: Colors.white, size: 26),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Options coming soon")),
-                          );
-                        },
-                      ),
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              top: _showUI ? 0 : -100,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 4,
+                  bottom: 24, 
+                  left: 8, 
+                  right: 8,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.8),
+                      Colors.transparent,
                     ],
                   ),
                 ),
-              ),
-
-              // --- BOTTOM BAR ---
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeInOut,
-                bottom: _showUI ? 0 : -100,
-                left: 0,
-                right: 0,
-                child: Container(
-                  padding: EdgeInsets.only(
-                    bottom: MediaQuery.of(context).padding.bottom + 16,
-                    top: 24,
-                    left: 20,
-                    right: 20,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        Colors.black.withOpacity(0.8),
-                        Colors.transparent,
-                      ],
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 26),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildActionButton(Icons.share_outlined, "Share", _isSharing ? () {} : _shareCurrentPhoto),
-                      _buildActionButton(Icons.tune, "Edit", () {}),
-                      _buildActionButton(Icons.image_search, "Lens", () {}),
-                      _buildActionButton(Icons.delete_outline, "Delete", _deleteCurrentPhoto),
+                  ],
+                ),
+              ),
+            ),
+
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              bottom: _showUI ? 0 : -100,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).padding.bottom + 16,
+                  top: 24,
+                  left: 20,
+                  right: 20,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.8),
+                      Colors.transparent,
                     ],
                   ),
                 ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
+                      onPressed: _deleteCurrentPhoto,
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
-
-  Widget _buildActionButton(IconData icon, String label, VoidCallback onPressed) {
-    if (label == "Share" && _isSharing) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(
-            width: 24, height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-          ),
-          const SizedBox(height: 12), // Align text
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 10)),
-        ],
-      );
-    }
-  
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          icon: Icon(icon, color: Colors.white, size: 26),
-          onPressed: onPressed,
-        ),
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white70, fontSize: 10),
-        ),
-      ],
     );
   }
 
@@ -486,6 +360,7 @@ class _PhotoItemState extends State<PhotoItem> with AutomaticKeepAliveClientMixi
 
   final TransformationController _controller = TransformationController();
   bool _enablePan = false;
+  bool _loadHighRes = false;
 
   @override
   void initState() {
@@ -501,8 +376,15 @@ class _PhotoItemState extends State<PhotoItem> with AutomaticKeepAliveClientMixi
   }
 
   void _onZoomChanged() {
-    final isZoomed = _controller.value.getMaxScaleOnAxis() > 1.01;
+    final scale = _controller.value.getMaxScaleOnAxis();
+    final isZoomed = scale > 1.01;
     widget.onZoomChanged(isZoomed);
+    
+    if (isZoomed && !_loadHighRes) {
+      setState(() {
+        _loadHighRes = true;
+      });
+    }
     
     if (isZoomed != _enablePan) {
       setState(() {
@@ -515,6 +397,7 @@ class _PhotoItemState extends State<PhotoItem> with AutomaticKeepAliveClientMixi
   Widget build(BuildContext context) {
     super.build(context);
     final previewUrl = MediaHelper.getPreviewUrl(widget.photo);
+    final originalUrl = MediaHelper.getMediaUrl(widget.photo);
 
     return InteractiveViewer(
       transformationController: _controller,
@@ -526,11 +409,19 @@ class _PhotoItemState extends State<PhotoItem> with AutomaticKeepAliveClientMixi
         child: Hero(
           tag: widget.photo.id,
           child: CachedNetworkImage(
-            imageUrl: previewUrl,
+            imageUrl: _loadHighRes ? originalUrl : previewUrl,
             fit: BoxFit.contain,
-            placeholder: (context, url) => const Center(
-              child: CircularProgressIndicator(color: Colors.white),
-            ),
+            placeholder: (context, url) {
+              if (url == originalUrl) {
+                return CachedNetworkImage(
+                  imageUrl: previewUrl,
+                  fit: BoxFit.contain,
+                );
+              }
+              return const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              );
+            },
             errorWidget: (context, url, error) => const Center(
               child: Icon(Icons.broken_image, color: Colors.grey, size: 64),
             ),
