@@ -1,8 +1,4 @@
-# ----------------------------------------------------------------              
-# MONOREPO MASTER GITIGNORE
-# ----------------------------------------------------------------
-
-# --- PocketBase & Server Data (DO NOT PUSH) ---
+# --- PocketBase & Server Data---
 # Ignore the actual database and uploaded files
 **/pb_data/
 **/pb_public/
