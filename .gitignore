@@ -1,0 +1,50 @@
+# ----------------------------------------------------------------              
+# MONOREPO MASTER GITIGNORE
+# ----------------------------------------------------------------
+
+# --- PocketBase & Server Data (DO NOT PUSH) ---
+# Ignore the actual database and uploaded files
+**/pb_data/
+**/pb_public/
+**/pocketbase
+**/pocketbase_old/
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/*.zip
+
+# --- Flutter / Dart ---
+# Ignore Flutter build artifacts and tool folders
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.pub/
+**/coverage/
+
+# --- Android / iOS Specific ---
+**/android/**/local.properties
+**/android/.gradle/
+**/ios/.generated/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/*.jks
+**/*.keystore
+
+# --- Nginx & OS ---
+# Ignore local temp files and logs
+**/logs/
+*.log
+.DS_Store
+Thumbs.db
+
+# --- Secrets & Environment ---
+.env
+.env.*
+! .env.example
+
+!**/pb_migrations/*.js
+!**/backend_src/
+!**/nginx/
+!**/nginx.conf
