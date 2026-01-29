@@ -1,15 +1,15 @@
-# Kinvault 📸 - Your Family's Digital Memory Chest
+# Kinvault - Your Family's Digital Memory Chest
 
 [![GitHub stars](https://img.shields.io/github/stars/hariiiiiiiii/kinvault)](https://github.com/hariiiiiiiii/kinvault)
 [![License](https://img.shields.io/github/license/hariiiiiiiii/kinvault)](https://github.com/hariiiiiiiii/kinvault/blob/main/LICENSE)
 [![Built with Flutter](https://img.shields.io/badge/Flutter-blue)](https://flutter.dev/)
 [![Powered by PocketBase](https://img.shields.io/badge/PocketBase-orange)](https://pocketbase.io/)
 
-## Introduction 🚀
+## Introduction 
 
 Kinvault is a Flutter application designed to securely store and share your precious family photos and memories. Built with a focus on privacy and ease of use, Kinvault provides a centralized location for your digital photo album, accessible only to those you trust.  It leverages PocketBase for backend functionality, offering a streamlined and scalable solution.
 
-## Features ✨
+## Features 
 
 *   **Secure Photo Storage:**  Utilizes PocketBase for secure storage of your photos.
 *   **User Authentication:**  Robust authentication system to protect your memories.
@@ -20,7 +20,7 @@ Kinvault is a Flutter application designed to securely store and share your prec
 *   **Riverpod State Management:** Predictable state management for a smooth user experience.
 *   **GoRouter Navigation:**  Declarative and type-safe navigation.
 
-## Installation 🛠️
+## Installation 
 
 1.  **Clone the Repository:**
 
@@ -54,14 +54,14 @@ Kinvault is a Flutter application designed to securely store and share your prec
     flutter run
     ```
 
-## Usage 💡
+## Usage 
 
 1.  **Launch the App:**  Run the Flutter application on your desired device or emulator.
 2.  **Login/Register:**  Use the login screen to access your Kinvault account. If you don't have one, create a new account from pocketbase superuser dashboard at ``` http://127.0.0.1:8090/_/```.
 3.  **Upload Photos:**  Navigate to the home screen and use the upload button to select photos from your device.
 4.  **View Photos:**  Uploaded photos will be displayed in a list on the home screen.
 
-## Contributing 🤝
+## Contributing 
 
 We welcome contributions to Kinvault!  Here's how you can get involved:
 
@@ -76,7 +76,7 @@ Please follow these guidelines:
 *   **Testing:**  Include unit tests for your changes.
 *   **Documentation:**  Update the documentation as needed.
 
-## License 📜
+## License 
 
 Kinvault is licensed under the [MIT License](https://github.com/hariiiiiiiii/kinvault/blob/main/LICENSE).  See the [LICENSE](https://github.com/hariiiiiiiii/kinvault/blob/main/LICENSE) file for more information.
 
@@ -89,4 +89,4 @@ If you find Kinvault useful or appreciate the effort put into this project, plea
 This project is licensed under the **MIT** License.
 
 ---
-🔗 GitHub Repo: https://github.com/hariiiiiiiii/kinvault
+GitHub Repo: https://github.com/hariiiiiiiii/kinvault
