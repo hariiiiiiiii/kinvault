@@ -57,7 +57,7 @@ Kinvault is a Flutter application designed to securely store and share your prec
 ## Usage 💡
 
 1.  **Launch the App:**  Run the Flutter application on your desired device or emulator.
-2.  **Login/Register:**  Use the login screen to access your Kinvault account. If you don't have one, create a new account.
+2.  **Login/Register:**  Use the login screen to access your Kinvault account. If you don't have one, create a new account from pocketbase superuser dashboard at ```bash http://127.0.0.1:8090/_/```.
 3.  **Upload Photos:**  Navigate to the home screen and use the upload button to select photos from your device.
 4.  **View Photos:**  Uploaded photos will be displayed in a list on the home screen.
 
