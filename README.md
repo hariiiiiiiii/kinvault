@@ -1,7 +1,7 @@
 # Kinvault 📸 - Your Family's Digital Memory Chest
 
-[![GitHub stars](https://img.shields.io/github/stars/YOUR_USERNAME/kinvault)](https://github.com/YOUR_USERNAME/kinvault)
-[![License](https://img.shields.io/github/license/YOUR_USERNAME/kinvault)](https://github.com/YOUR_USERNAME/kinvault/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/hariiiiiiiii/kinvault)](https://github.com/hariiiiiiiii/kinvault)
+[![License](https://img.shields.io/github/license/hariiiiiiiii/kinvault)](https://github.com/hariiiiiiiii/kinvault/blob/main/LICENSE)
 [![Built with Flutter](https://img.shields.io/badge/Flutter-blue)](https://flutter.dev/)
 [![Powered by PocketBase](https://img.shields.io/badge/PocketBase-orange)](https://pocketbase.io/)
 
